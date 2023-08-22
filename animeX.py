@@ -3,6 +3,7 @@ import sys
 import time
 import urllib3
 import requests
+from tqdm import tqdm
 from bs4 import BeautifulSoup
 
 
@@ -129,16 +130,22 @@ def download_episode(anime_name, download_url, i=1):
             print('Gotten Verified Download link!')
             print("Downloading", name_parser(filename))
 
-            # download if response of download url request is ok
-            with open(download_path, 'wb') as out:
-                while True:
-                    data = r.read()
-                    if not data:
-                        break
-                    out.write(data)
+            with open(download_path, 'ab') as out:
+                length = int(r.headers.get('content-length'))
+                size = 0
+                blocksize = 1048576
 
-            r.release_conn()
-            clear_tmp(anime_name)
+                with tqdm(total=length, unit='B', unit_scale=True, unit_divisor=1024) as bar:
+                    while True:
+                        data = r.read(blocksize)
+                        if not data:
+                            break
+                        out.write(data)
+                        size += len(data)
+                        bar.update(len(data))
+
+                    r.release_conn()
+                    clear_tmp(anime_name)
         except BadLinkException as e:
             print(e)
             n = i + 1
